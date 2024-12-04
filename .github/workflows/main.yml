@@ -1,0 +1,54 @@
+name: Deploy to Lambda using ECR
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy_lambda:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout the code
+      - uses: actions/checkout@v2
+
+      # Step 2: Set up Node.js
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      # Step 3: Install dependencies and compile TypeScript
+      - name: Install dependencies and compile TypeScript
+        run: |
+          npm ci
+          npx tsc # Compiles TypeScript to JavaScript in the dist/ folder
+
+      # Step 4: Configure AWS Credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      # Step 5: Login to ECR
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+
+      # Step 6: Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/hamzaakkaoui/lambda-app:latest .
+
+      # Step 7: Push Docker image to ECR
+      - name: Push Docker image to Amazon ECR
+        run: |
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/hamzaakkaoui/lambda-app:latest
+
+      # Step 8: Deploy Lambda function with ECR image
+      - name: Deploy Lambda Function
+        run: |
+          aws lambda update-function-code \
+            --function-name lambda-gh-action-ecr \
+            --image-uri ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/hamzaakkaoui/lambda-app:latest
