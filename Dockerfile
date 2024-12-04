@@ -1,21 +1,17 @@
-# Use the official Node.js image
-FROM node:18-alpine
+# Use the official AWS Lambda Node.js 16 runtime as a base image
+FROM public.ecr.aws/lambda/nodejs:16
 
 # Set the working directory
-WORKDIR /app
+WORKDIR /var/task
 
-# Copy package files and install dependencies
-COPY package*.json ./
-RUN npm install --production
+# Copy package.json and package-lock.json to the working directory
+COPY package.json package-lock.json ./
+
+# Install dependencies
+RUN npm install  # Use npm install instead of npm ci
 
 # Copy the rest of the application code
-COPY . .
+COPY dist/ .
 
-# Build the application
-RUN npm run build
-
-# Set the Lambda environment variables
-ENV AWS_REGION=us-east-1
-
-# Command to run the application
-CMD ["node", "dist/index.js"]
+# Set the CMD to the function handler
+CMD ["index.handler"]
