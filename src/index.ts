@@ -4,6 +4,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     return {
         statusCode: 200,
         headers: { 'Content-Type': 'text/plain' },
-        body: 'Hello, World!',
+        body: 'Hello, World tesr!',
     };
 };
