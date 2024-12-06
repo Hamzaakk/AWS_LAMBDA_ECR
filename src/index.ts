@@ -35,7 +35,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     if (!book) {
                         return {
                             statusCode: 404,
-                            body: JSON.stringify({ message: 'Book not found' }),
+                            body: JSON.stringify({ message: 'Books  not availibale' }),
                         };
                     }
                     return {
@@ -66,7 +66,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 } else {
                     return {
                         statusCode: 404,
-                        body: JSON.stringify({ message: 'Book not found' }),
+                        body: JSON.stringify({ message: 'Book not created' }),
                     };
                 }
             }
