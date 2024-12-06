@@ -52,3 +52,50 @@ jobs:
           aws lambda update-function-code \
             --function-name lambda-gh-action-ecr \
             --image-uri ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/hamzaakkaoui/lambda-app:latest
+
+      # Step 9: Fetch Lambda ARN dynamically
+      - name: Get Lambda ARN
+        id: get-lambda-arn
+        run: |
+          LAMBDA_ARN=$(aws lambda get-function \
+            --function-name lambda-gh-action-ecr \
+            --query 'Configuration.FunctionArn' --output text)
+          echo "LAMBDA_ARN=$LAMBDA_ARN" >> $GITHUB_ENV
+
+      # Step 10: Create API Gateway and Configure Integration
+      - name: Create API Gateway and Configure Integration
+        env:
+          LAMBDA_ARN: ${{ env.LAMBDA_ARN }}
+        run: |
+          REST_API_ID=$(aws apigateway create-rest-api --name "BooksAPI" --query 'id' --output text)
+          echo "REST_API_ID=$REST_API_ID" >> $GITHUB_ENV
+          
+          ROOT_RESOURCE_ID=$(aws apigateway get-resources --rest-api-id $REST_API_ID --query 'items[0].id' --output text)
+          echo "ROOT_RESOURCE_ID=$ROOT_RESOURCE_ID" >> $GITHUB_ENV
+          
+          BOOKS_RESOURCE_ID=$(aws apigateway create-resource \
+            --rest-api-id $REST_API_ID \
+            --parent-id $ROOT_RESOURCE_ID \
+            --path-part "books" \
+            --query 'id' --output text)
+          echo "BOOKS_RESOURCE_ID=$BOOKS_RESOURCE_ID" >> $GITHUB_ENV
+
+          # Create ANY method on /books and integrate with Lambda
+          aws apigateway put-method \
+            --rest-api-id $REST_API_ID \
+            --resource-id $BOOKS_RESOURCE_ID \
+            --http-method ANY \
+            --authorization-type NONE
+
+          aws apigateway put-integration \
+            --rest-api-id $REST_API_ID \
+            --resource-id $BOOKS_RESOURCE_ID \
+            --http-method ANY \
+            --type AWS_PROXY \
+            --integration-http-method POST \
+            --uri arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/$LAMBDA_ARN/invocations
+
+          # Deploy the API
+          aws apigateway create-deployment \
+            --rest-api-id $REST_API_ID \
+            --stage-name prod
