@@ -4,6 +4,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     return {
         statusCode: 200,
         headers: { 'Content-Type': 'text/plain' },
-        body: '<h1>this Project is deplyed using Github Actions Pipline : Using AMZON ECR FOR IMAGE BUILD AND DEPLOYED TO AMZON LAMNDA! </h1>',
+        body: 'this Project is deplyed using Github Actions Pipline : Using AMZON ECR FOR IMAGE BUILD AND DEPLOYED TO AMZON LAMNDA!',
     };
 };
