@@ -7,98 +7,89 @@ type Book = {
     publishedYear: number;
 };
 
+// In-memory storage (reset on every invocation)
 const books: Record<string, Book> = {};
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    const method = event.httpMethod;
-    const path = event.path;
-    const body = event.body ? JSON.parse(event.body) : null;
+    const { httpMethod: method, path, body } = event;
+    const parsedBody = body ? JSON.parse(body) : null;
 
-    switch (method) {
-        case 'POST': // Create
-            if (path === '/books') {
-                const newBook: Book = { id: Date.now().toString(), ...body };
-                books[newBook.id] = newBook;
+    try {
+        if (method === 'POST' && path === '/books') {
+            const newBook: Book = { id: Date.now().toString(), ...parsedBody };
+            books[newBook.id] = newBook;
 
+            return {
+                statusCode: 201,
+                body: JSON.stringify(newBook),
+            };
+        }
+
+        if (method === 'GET' && path.startsWith('/books')) {
+            const bookId = path.split('/books/')[1];
+
+            if (bookId) {
+                const book = books[bookId];
+                if (!book) {
+                    return {
+                        statusCode: 404,
+                        body: JSON.stringify({ message: 'Book not found' }),
+                    };
+                }
                 return {
-                    statusCode: 201,
-                    body: JSON.stringify(newBook),
+                    statusCode: 200,
+                    body: JSON.stringify(book),
                 };
             }
-            break;
 
-        case 'GET': // Read
-            if (path.startsWith('/books')) {
-                const bookId = path.split('/books/')[1];
-                if (bookId) {
-                    const book = books[bookId];
-                    if (!book) {
-                        return {
-                            statusCode: 404,
-                            body: JSON.stringify({ message: 'Book not found' }),
-                        };
-                    }
-                    return {
-                        statusCode: 200,
-                        body: JSON.stringify(book),
-                    };
-                } else {
-                    // Return all books
-                    return {
-                        statusCode: 200,
-                        body: JSON.stringify(Object.values(books)),
-                    };
-                }
-            }
-            break;
-
-        case 'PUT': // Update
-            if (path.startsWith('/books/')) {
-                const bookId = path.split('/books/')[1];
-                if (books[bookId]) {
-                    const updatedBook = { ...books[bookId], ...body };
-                    books[bookId] = updatedBook;
-
-                    return {
-                        statusCode: 200,
-                        body: JSON.stringify(updatedBook),
-                    };
-                } else {
-                    return {
-                        statusCode: 404,
-                        body: JSON.stringify({ message: 'Book not found' }),
-                    };
-                }
-            }
-            break;
-
-        case 'DELETE': // Delete
-            if (path.startsWith('/books/')) {
-                const bookId = path.split('/books/')[1];
-                if (books[bookId]) {
-                    delete books[bookId];
-                    return {
-                        statusCode: 204,
-                        body: JSON.stringify({}),
-                    };
-                } else {
-                    return {
-                        statusCode: 404,
-                        body: JSON.stringify({ message: 'Book not found' }),
-                    };
-                }
-            }
-            break;
-
-        default:
+            // Return all books
             return {
-                statusCode: 405,
-                body: JSON.stringify({ message: `Method ${method} not allowed` }),
+                statusCode: 200,
+                body: JSON.stringify(Object.values(books)),
             };
-    }
+        }
 
-    return {
-        statusCode: 404,
-        body: JSON.stringify({ message: 'Invalid request' }),
-    };
+        if (method === 'PUT' && path.startsWith('/books/')) {
+            const bookId = path.split('/books/')[1];
+            if (books[bookId]) {
+                const updatedBook = { ...books[bookId], ...parsedBody };
+                books[bookId] = updatedBook;
+
+                return {
+                    statusCode: 200,
+                    body: JSON.stringify(updatedBook),
+                };
+            }
+            return {
+                statusCode: 404,
+                body: JSON.stringify({ message: 'Book not found' }),
+            };
+        }
+
+        if (method === 'DELETE' && path.startsWith('/books/')) {
+            const bookId = path.split('/books/')[1];
+            if (books[bookId]) {
+                delete books[bookId];
+                return {
+                    statusCode: 204,
+                    body: '',
+                };
+            }
+            return {
+                statusCode: 404,
+                body: JSON.stringify({ message: 'Book not found' }),
+            };
+        }
+
+        return {
+            statusCode: 405,
+            body: JSON.stringify({ message: `Method ${method} not allowed` }),
+        };
+    } catch (error) {
+        console.error('Error handling request:', error);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ message: 'Internal Server Error' }),
+        };
+    }
 };
