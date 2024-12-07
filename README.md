@@ -1,4 +1,4 @@
-# Deploy to Lambda using ECR
+# Deploy to Lambda using ECR , CI/CD Pipline
 
 This project demonstrates the deployment of a Node.js application to AWS Lambda using a container image hosted on Amazon Elastic Container Registry (ECR). The workflow automates the process using GitHub Actions and includes building, pushing the Docker image to ECR, and updating the Lambda function.
 
