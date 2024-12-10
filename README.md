@@ -46,7 +46,7 @@ The workflow is defined in `.github/workflows/deploy.yml` and executes the follo
 .
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml   # GitHub Actions workflow file
+│       └── main.yml   # GitHub Actions workflow file
 ├── src/                 # TypeScript source files
 ├── dist/                # Compiled JavaScript output
 ├── Dockerfile           # Dockerfile for containerization
